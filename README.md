@@ -1,0 +1,2 @@
+# Retrofit Kotlin Result Adapter
+

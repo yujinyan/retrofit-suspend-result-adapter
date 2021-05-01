@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
   kotlin("jvm") version "1.5.0-RC"
 }
@@ -9,24 +11,30 @@ repositories {
   mavenCentral()
 }
 
+kotlin {
+  explicitApi()
+}
+
+tasks.withType<KotlinCompile>().configureEach {
+  kotlinOptions.freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
+}
+
+val retrofitVersion = "2.9.0"
+val kotestVersion = "4.4.3"
+val moshiVersion = "1.12.0"
+
 dependencies {
-  val retrofitVersion = "2.9.0"
   api("com.squareup.retrofit2:retrofit:$retrofitVersion")
 
-  "4.4.3".also { version ->
-    testImplementation("io.kotest:kotest-runner-junit5:$version")
-    testImplementation("io.kotest:kotest-assertions-core:$version")
-  }
+  testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
+  testImplementation("io.kotest:kotest-assertions-core:$kotestVersion")
 
   testImplementation("com.squareup.okhttp3:mockwebserver:4.9.0")
-  "1.12.0".also { version ->
-    testImplementation("com.squareup.moshi:moshi-kotlin:$version")
-    testImplementation("com.squareup.moshi:moshi:$version")
-  }
+  testImplementation("com.squareup.moshi:moshi-kotlin:$moshiVersion")
+  testImplementation("com.squareup.moshi:moshi:$moshiVersion")
   testImplementation("com.squareup.retrofit2:converter-moshi:$retrofitVersion")
 
   testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.0")
-
 }
 
 

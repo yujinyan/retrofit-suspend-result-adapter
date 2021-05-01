@@ -7,13 +7,15 @@ import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 
 
-class KotlinResultCallAdapterFactory(
-  private val defaultFailureHandler: FailureHandler? = null
+public class SuspendResultCallAdapterFactory(
+  private val failureHandler: FailureHandler? = null
 ) : CallAdapter.Factory() {
 
-  // 用于配置全局的异常处理逻辑
-  fun interface FailureHandler {
-    fun onFailure(throwable: Throwable)
+  /**
+   * [onFailure] will be called when [Result.isFailure]
+   */
+  public fun interface FailureHandler {
+    public fun onFailure(throwable: Throwable)
   }
 
   override fun get(
@@ -33,23 +35,20 @@ class KotlinResultCallAdapterFactory(
 
     val dataType = getParameterUpperBound(0, resultType)
 
+    // Call<T>
     val delegateType = object : ParameterizedType {
       override fun getActualTypeArguments(): Array<Type> = arrayOf(dataType)
       override fun getRawType(): Type = Call::class.java
       override fun getOwnerType(): Type? = null
     }
 
-    // 获取后续代理
     val delegate: CallAdapter<*, *> = retrofit
       .nextCallAdapter(this, delegateType, annotations)
 
-    return CatchingCallAdapter(
-      delegate,
-      defaultFailureHandler
-    )
+    return CatchingCallAdapter(delegate, failureHandler)
   }
 
-  class CatchingCallAdapter(
+  private class CatchingCallAdapter(
     private val delegate: CallAdapter<*, *>,
     private val failureHandler: FailureHandler?
   ) : CallAdapter<Any, Call<Result<*>>> {
@@ -57,14 +56,13 @@ class KotlinResultCallAdapterFactory(
     override fun adapt(call: Call<Any>): Call<Result<*>> = CatchingCall(call, failureHandler)
   }
 
-  class CatchingCall(
+  private class CatchingCall(
     private val delegate: Call<Any>,
     private val failureHandler: FailureHandler?
   ) : Call<Result<*>> {
 
     override fun enqueue(callback: Callback<Result<*>>) = delegate.enqueue(object : Callback<Any> {
       override fun onResponse(call: Call<Any>, response: Response<Any>) {
-        // 无论请求响应成功还是失败都回调 Response.success
         if (response.isSuccessful) {
           val body = response.body()
           callback.onResponse(this@CatchingCall, Response.success(Result.success(body)))

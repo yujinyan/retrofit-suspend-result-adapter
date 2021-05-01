@@ -1,5 +1,7 @@
 package me.yujinyan.retrofit
 
+import com.squareup.moshi.JsonDataException
+import com.squareup.moshi.JsonEncodingException
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.adapter
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -28,7 +30,7 @@ interface UserApi {
   data class User(val id: Int, val name: String)
 }
 
-class KotlinResultCallAdapterFactoryTest {
+class SuspendResultCallAdapterFactoryTest {
 
   private val server = MockWebServer()
 
@@ -41,7 +43,7 @@ class KotlinResultCallAdapterFactoryTest {
 
   private val retrofit = Retrofit.Builder()
     .baseUrl(server.url("/"))
-    .addCallAdapterFactory(KotlinResultCallAdapterFactory())
+    .addCallAdapterFactory(SuspendResultCallAdapterFactory())
     .addConverterFactory(MoshiConverterFactory.create(moshi))
     .client(
       OkHttpClient.Builder()
@@ -53,7 +55,7 @@ class KotlinResultCallAdapterFactoryTest {
   private val api = retrofit.create<UserApi>()
 
   @Test
-  fun `can request successfully`() = runBlocking {
+  fun `successful request`() = runBlocking {
     User(1, "Peter")
       .let { MockResponse().setBody(userAdapter.toJson(it)) }
       .also { server.enqueue(it) }
@@ -73,6 +75,31 @@ class KotlinResultCallAdapterFactoryTest {
       it.isSuccess shouldBe false
       it.exceptionOrNull().shouldBeTypeOf<HttpException>()
         .code() shouldBe 500
+    }
+  }
+
+  @Test
+  fun `invalid json`() = runBlocking {
+    MockResponse().setResponseCode(200).setBody("some gibberish ...")
+      .also { server.enqueue(it) }
+
+    api.getUser(1).should {
+      it.isSuccess shouldBe false
+      it.exceptionOrNull().shouldBeTypeOf<JsonEncodingException>()
+    }
+  }
+
+  @Test
+  fun `json data mismatch`() = runBlocking {
+    MockResponse().setResponseCode(200).setBody(
+      """
+      {"foo": 1, "bar": 2}
+    """
+    ).also { server.enqueue(it) }
+
+    api.getUser(1).should {
+      it.isSuccess shouldBe false
+      it.exceptionOrNull().shouldBeTypeOf<JsonDataException>()
     }
   }
 }

@@ -18,6 +18,28 @@ public class SuspendResultCallAdapterFactory(
     public fun onFailure(throwable: Throwable)
   }
 
+  private var hasConverterForResult: Boolean? = null
+  private fun Retrofit.hasConverterForResultType(resultType: Type): Boolean {
+    return if (hasConverterForResult == true) true else this@SuspendResultCallAdapterFactory.run {
+      runCatching {
+        nextResponseBodyConverter<Result<*>>(
+          null, resultType, arrayOf()
+        )
+      }.isSuccess.also { hasConverterForResult = it }
+    }
+  }
+
+  /**
+   * Represents Type Call<T>
+   */
+  private class CallDataType(
+    private val dataType: Type
+  ) : ParameterizedType {
+    override fun getActualTypeArguments(): Array<Type> = arrayOf(dataType)
+    override fun getRawType(): Type = Call::class.java
+    override fun getOwnerType(): Type? = null
+  }
+
   override fun get(
     returnType: Type,
     annotations: Array<out Annotation>,
@@ -36,11 +58,8 @@ public class SuspendResultCallAdapterFactory(
     val dataType = getParameterUpperBound(0, resultType)
 
     // Call<T>
-    val delegateType = object : ParameterizedType {
-      override fun getActualTypeArguments(): Array<Type> = arrayOf(dataType)
-      override fun getRawType(): Type = Call::class.java
-      override fun getOwnerType(): Type? = null
-    }
+    val delegateType = if (retrofit.hasConverterForResultType(resultType))
+      returnType else CallDataType(dataType)
 
     val delegate: CallAdapter<*, *> = retrofit
       .nextCallAdapter(this, delegateType, annotations)

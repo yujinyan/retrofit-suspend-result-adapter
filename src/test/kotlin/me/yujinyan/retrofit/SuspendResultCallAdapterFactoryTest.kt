@@ -38,27 +38,19 @@ class SuspendResultCallAdapterFactoryTest {
     .addLast(KotlinJsonAdapterFactory())
     .build()
 
-  @OptIn(ExperimentalStdlibApi::class)
-  val userAdapter = moshi.adapter<User>()
-
   private val retrofit = Retrofit.Builder()
     .baseUrl(server.url("/"))
     .addCallAdapterFactory(SuspendResultCallAdapterFactory())
     .addConverterFactory(MoshiConverterFactory.create(moshi))
-    .client(
-      OkHttpClient.Builder()
-        .apply { callTimeout(Duration.ofMillis(100)) }
-        .build()
-    )
     .build()
 
   private val api = retrofit.create<UserApi>()
 
   @Test
   fun `successful request`() = runBlocking {
-    User(1, "Peter")
-      .let { MockResponse().setBody(userAdapter.toJson(it)) }
-      .also { server.enqueue(it) }
+    MockResponse().setBody(
+      """ {"id": 1, "name": "Peter"} """
+    ).also { server.enqueue(it) }
 
     api.getUser(1).should {
       it.isSuccess shouldBe true

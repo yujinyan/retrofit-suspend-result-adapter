@@ -2,6 +2,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
   kotlin("jvm") version "1.5.0-RC"
+  `maven-publish`
 }
 
 group = "me.yujinyan"
@@ -18,6 +19,15 @@ kotlin {
 tasks.withType<KotlinCompile>().configureEach {
   kotlinOptions.freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
 }
+
+publishing {
+  publications {
+    create<MavenPublication>("maven") {
+      from(components["java"])
+    }
+  }
+}
+
 
 val retrofitVersion = "2.9.0"
 val kotestVersion = "4.4.3"

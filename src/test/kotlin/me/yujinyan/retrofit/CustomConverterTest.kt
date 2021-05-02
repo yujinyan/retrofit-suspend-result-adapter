@@ -48,6 +48,7 @@ class CustomConverterTest {
     api.getUser(1).should {
       it.isSuccess shouldBe true
       it.getOrThrow().name shouldBe "Peter"
+      it.getOrThrow().id shouldBe 1
     }
   }
 

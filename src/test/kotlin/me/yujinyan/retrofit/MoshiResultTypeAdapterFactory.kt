@@ -31,6 +31,7 @@ class MoshiResultTypeAdapterFactory : JsonAdapter.Factory {
   ) : JsonAdapter<T>() {
     override fun fromJson(reader: JsonReader): T? {
       reader.beginObject()
+
       var errcode: Int? = null
       var msg: String? = null
       var data: Any? = null
@@ -45,7 +46,8 @@ class MoshiResultTypeAdapterFactory : JsonAdapter.Factory {
       }
       reader.endObject()
 
-      if (errcode == null) throw JsonDataException("Expected field errcode not present.")
+      if (errcode == null)
+        throw JsonDataException("Expected field [errcode] not present.")
 
       return if (errcode != 0) throw BusinessException(errcode, msg)
       else data as T

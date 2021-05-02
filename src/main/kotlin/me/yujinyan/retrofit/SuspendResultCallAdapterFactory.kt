@@ -31,7 +31,7 @@ public class SuspendResultCallAdapterFactory(
   }
 
   /**
-   * Represents Type `Call<T>`, where `T` * is passed in [dataType]
+   * Represents Type `Call<T>`, where `T` is passed in [dataType]
    */
   private class CallDataType(
     private val dataType: Type

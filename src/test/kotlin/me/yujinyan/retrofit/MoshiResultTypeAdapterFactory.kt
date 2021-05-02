@@ -47,10 +47,12 @@ class MoshiResultTypeAdapterFactory : JsonAdapter.Factory {
 
       if (errcode == null) throw JsonDataException("Expected field errcode not present.")
 
-      return if (errcode != 0) throw RuntimeException(msg)
+      return if (errcode != 0) throw BusinessException(errcode, msg)
       else data as T
     }
 
     override fun toJson(writer: JsonWriter, value: T?): Unit = TODO("Not yet implemented")
   }
 }
+
+class BusinessException(val code: Int, message: String?) : RuntimeException(message)

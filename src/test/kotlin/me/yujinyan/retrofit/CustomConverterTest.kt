@@ -4,12 +4,10 @@ import com.squareup.moshi.JsonDataException
 import com.squareup.moshi.JsonEncodingException
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
 import kotlinx.coroutines.runBlocking
-import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.jupiter.api.Test
 import retrofit2.HttpException
@@ -38,14 +36,14 @@ class CustomConverterTest {
 
   @Test
   fun `successful request`() = runBlocking {
-    MockResponse().setBody(
+    server.enqueueResponse(
       """ 
         {
           "errcode": 0,
           "data": {"id": 1, "name": "Peter"} 
         }
       """
-    ).also { server.enqueue(it) }
+    )
 
     api.getUser(1).should {
       it.isSuccess shouldBe true
@@ -55,27 +53,31 @@ class CustomConverterTest {
 
   @Test
   fun `server returned business error`() = runBlocking {
-    MockResponse().setBody(
+    server.enqueueResponse(
       """ 
         {
           "errcode": 500,
           "msg": "Whoops."
         }
       """
-    ).also { server.enqueue(it) }
+    )
 
     api.getUser(1).should {
       it.isSuccess shouldBe false
       it.exceptionOrNull()
-        .shouldNotBeNull()
-        .message shouldBe "Whoops."
+        .shouldBeTypeOf<BusinessException>()
+        .should { e ->
+          e.message shouldBe "Whoops."
+          e.code shouldBe 500
+        }
     }
   }
 
   @Test
   fun `http 500`() = runBlocking {
-    MockResponse().setResponseCode(500).setBody("Server Error")
-      .also { server.enqueue(it) }
+    server.enqueueResponse("Server Error") {
+      setResponseCode(500)
+    }
 
     api.getUser(1).should {
       it.isSuccess shouldBe false
@@ -86,8 +88,7 @@ class CustomConverterTest {
 
   @Test
   fun `invalid json`() = runBlocking {
-    MockResponse().setResponseCode(200).setBody("some gibberish ...")
-      .also { server.enqueue(it) }
+    server.enqueueResponse("some gibberish")
 
     api.getUser(1).should {
       it.isSuccess shouldBe false
@@ -97,11 +98,11 @@ class CustomConverterTest {
 
   @Test
   fun `json data mismatch`() = runBlocking {
-    MockResponse().setResponseCode(200).setBody(
+    server.enqueueResponse(
       """
       {"foo": 1, "bar": 2}
     """
-    ).also { server.enqueue(it) }
+    )
 
     api.getUser(1).should {
       it.isSuccess shouldBe false

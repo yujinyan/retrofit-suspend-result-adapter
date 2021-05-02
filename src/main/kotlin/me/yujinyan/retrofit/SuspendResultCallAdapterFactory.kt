@@ -18,6 +18,29 @@ public class SuspendResultCallAdapterFactory(
     public fun onFailure(throwable: Throwable)
   }
 
+  private var hasConverterForResult: Boolean? = null
+  private fun Retrofit.hasConverterForResultType(resultType: Type): Boolean {
+    // If converter exists for any `Result<T>`,
+    // user registered custom converter for `Result` type.
+    // No need to check again.
+    return if (hasConverterForResult == true) true else runCatching {
+      nextResponseBodyConverter<Result<*>>(
+        null, resultType, arrayOf()
+      )
+    }.isSuccess.also { hasConverterForResult = it }
+  }
+
+  /**
+   * Represents Type `Call<T>`, where `T` is passed in [dataType]
+   */
+  private class CallDataType(
+    private val dataType: Type
+  ) : ParameterizedType {
+    override fun getActualTypeArguments(): Array<Type> = arrayOf(dataType)
+    override fun getRawType(): Type = Call::class.java
+    override fun getOwnerType(): Type? = null
+  }
+
   override fun get(
     returnType: Type,
     annotations: Array<out Annotation>,
@@ -35,12 +58,8 @@ public class SuspendResultCallAdapterFactory(
 
     val dataType = getParameterUpperBound(0, resultType)
 
-    // Call<T>
-    val delegateType = object : ParameterizedType {
-      override fun getActualTypeArguments(): Array<Type> = arrayOf(dataType)
-      override fun getRawType(): Type = Call::class.java
-      override fun getOwnerType(): Type? = null
-    }
+    val delegateType = if (retrofit.hasConverterForResultType(resultType))
+      returnType else CallDataType(dataType)
 
     val delegate: CallAdapter<*, *> = retrofit
       .nextCallAdapter(this, delegateType, annotations)
@@ -87,7 +106,7 @@ public class SuspendResultCallAdapterFactory(
 
     override fun clone(): Call<Result<*>> = CatchingCall(delegate, failureHandler)
     override fun execute(): Response<Result<*>> =
-      throw UnsupportedOperationException("No blocking call in suspend function.")
+      throw UnsupportedOperationException("Suspend function should not be blocking.")
 
     override fun isExecuted(): Boolean = delegate.isExecuted
     override fun cancel(): Unit = delegate.cancel()

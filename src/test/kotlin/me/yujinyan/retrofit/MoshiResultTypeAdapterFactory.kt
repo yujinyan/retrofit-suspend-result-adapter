@@ -1,7 +1,6 @@
 package me.yujinyan.retrofit
 
 import com.squareup.moshi.*
-import java.lang.RuntimeException
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 
@@ -22,7 +21,7 @@ class MoshiResultTypeAdapterFactory : JsonAdapter.Factory {
     val rawType = type.rawType
     if (rawType != Result::class.java) return null
     val dataType: Type = (type as? ParameterizedType)?.actualTypeArguments?.firstOrNull() ?: return null
-    val dataTypeAdapter = moshi.nextAdapter<Any>(this, dataType, annotations)
+    val dataTypeAdapter = moshi.adapter<Any>(dataType, emptySet(), "data")
     return ResultTypeAdapter(dataTypeAdapter)
   }
 
@@ -41,6 +40,7 @@ class MoshiResultTypeAdapterFactory : JsonAdapter.Factory {
           "errcode" -> errcode = reader.nextString().toIntOrNull()
           "msg" -> msg = reader.nextString()
           "data" -> data = dataTypeAdapter.fromJson(reader)
+            ?: throw JsonDataException("Expected non-null field [data], but was actually null")
           else -> reader.skipValue()
         }
       }

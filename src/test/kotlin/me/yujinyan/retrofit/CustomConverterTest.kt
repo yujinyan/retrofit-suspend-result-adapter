@@ -109,5 +109,20 @@ class CustomConverterTest {
       it.isSuccess shouldBe false
       it.exceptionOrNull().shouldBeTypeOf<JsonDataException>()
     }
+
+    server.enqueueResponse(
+      """
+        {
+          "errcode":"",
+          "data":null
+        }
+    """
+    )
+    api.getUser(1).should {
+      it.isSuccess shouldBe false
+      it.exceptionOrNull().shouldBeTypeOf<JsonDataException>()
+    }
   }
+
+
 }

@@ -40,7 +40,7 @@ class MoshiResultTypeAdapterFactory : JsonAdapter.Factory {
           "errcode" -> errcode = reader.nextString().toIntOrNull()
           "msg" -> msg = reader.nextString()
           "data" -> data = dataTypeAdapter.fromJson(reader)
-            ?: throw JsonDataException("Expected non-null field [data], but was actually null")
+            ?: throw IllegalStateException("Response field [data] should not be null")
           else -> reader.skipValue()
         }
       }

@@ -109,7 +109,10 @@ class CustomConverterTest {
       it.isSuccess shouldBe false
       it.exceptionOrNull().shouldBeTypeOf<JsonDataException>()
     }
+  }
 
+  @Test
+  fun `response data is null`() = runBlocking {
     server.enqueueResponse(
       """
         {
@@ -120,9 +123,21 @@ class CustomConverterTest {
     )
     api.getUser(1).should {
       it.isSuccess shouldBe false
-      it.exceptionOrNull().shouldBeTypeOf<JsonDataException>()
+      it.exceptionOrNull().shouldBeTypeOf<IllegalStateException>()
+    }
+
+    server.enqueueResponse(
+      """
+        {
+          "errcode":"",
+          "data":null
+        }
+    """
+    )
+    api.findUser(1).should {
+      it.isSuccess shouldBe false
+      it.exceptionOrNull().shouldBeTypeOf<IllegalStateException>()
     }
   }
-
 
 }

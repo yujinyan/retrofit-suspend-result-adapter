@@ -21,7 +21,7 @@ class MoshiResultTypeAdapterFactory : JsonAdapter.Factory {
     val rawType = type.rawType
     if (rawType != Result::class.java) return null
     val dataType: Type = (type as? ParameterizedType)?.actualTypeArguments?.firstOrNull() ?: return null
-    val dataTypeAdapter = moshi.adapter<Any>(dataType, emptySet(), "data")
+    val dataTypeAdapter = moshi.nextAdapter<Any>(this, dataType, annotations)
     return ResultTypeAdapter(dataTypeAdapter)
   }
 

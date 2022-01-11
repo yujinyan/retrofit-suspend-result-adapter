@@ -23,7 +23,7 @@ interface UserApi {
   @GET("/user")
   suspend fun getUser(@Query("id") id: Int): Result<User>
 
-  @GET("/user")
+  @GET("/user-nullable")
   suspend fun findUser(@Query("id") id: Int): Result<User?>
 
   data class User(val id: Int, val name: String)

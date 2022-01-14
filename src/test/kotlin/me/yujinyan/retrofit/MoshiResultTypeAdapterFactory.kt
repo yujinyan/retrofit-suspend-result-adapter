@@ -1,7 +1,6 @@
 package me.yujinyan.retrofit
 
 import com.squareup.moshi.*
-import java.lang.RuntimeException
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 
@@ -41,6 +40,7 @@ class MoshiResultTypeAdapterFactory : JsonAdapter.Factory {
           "errcode" -> errcode = reader.nextString().toIntOrNull()
           "msg" -> msg = reader.nextString()
           "data" -> data = dataTypeAdapter.fromJson(reader)
+            ?: throw IllegalStateException("Response field [data] should not be null")
           else -> reader.skipValue()
         }
       }
